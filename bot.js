@@ -16,11 +16,26 @@ var waitingForPile = false;
 var curKings = [];
 var curPis = [];
 var curSnipers = [];
+var curSniperGames = [];
+var sniperGameRunning = false;
 var curFingers = [];
 var fingerGame = [];
 var fingerGameRunning = false;
 var isBunke = false;
 
+var tællings = [
+  "nul",
+  "en",
+  "to",
+  "tre",
+  "fire",
+  "fem",
+  "seks",
+  "syv",
+  "otte",
+  "ni",
+  "ti",
+];
 var cards = [
   ["H", 1],
   ["H", 2],
@@ -261,7 +276,7 @@ client.on('message', msg => {
 
 
     } else {
-      msg.reply('Det ikke din tur endnu, 3 tårer');
+      msg.reply('Det ikke din tur endnu, 3 tåre');
     }
 
   }
@@ -299,32 +314,63 @@ client.on('message', msg => {
         users.splice(index,1);
       }
     } else {
-      msg.reply("Du har ikke et piskort, tag 2 tårer");
+      msg.reply("Du har ikke et piskort, tag 2 tåre");
     }
   }
 
-  if (msg.content === '!sniper') {
+  if (msg.content.startsWith("!snipe ")) {
 
     var index = curSnipers.indexOf(msg.member.user.tag);
     if (index > -1) {
-      msg.reply("Du har nu lagt en finger på bordet, i andre skal lægge en finger på bordet med !jegfinger");
+      const snipedUser = msg.content.slice(7);
+      if(users.contains(snipedUser)){
+        msg.reply(`Du sniper nu ${snipedUser}. ${snipedUser} kan stoppe det ved at skrive !pegpå efterfulgt af ${msg.member.user.tag}`);
+        curSniperGames.push({
+          sniper = msg.member.user.tag,
+          sniped = snipedUser,
+          slurks = 0,
+        });
+        if(!sniperGameRunning) runSniperGame();
+      }else{
+        msg.reply("Ja de er så ikke med i spillet vel makker, tag lige en tår og prøv igen");
+      }
       curSnipers.splice(index,1);
-      fingerGame = users;
-      fingerGameRunning = true;
     } else {
-      msg.reply("Du har ikke et sniperkort, tag 2 tårer");
+      msg.reply("Du har ikke et sniperkort, tag 2 tåre");
     }
+  }
+  if (msg.content.startswith("!pegpå ")) {
+    let beingSniped = false;
+    for(const sniperGame of curSniperGames) if(sniperGame.sniped === msg.member.user.tag) beingSniped = true;
+  }
+  runSniperGame = () => {
+    sniperGameRunning = true;
+    if(curSniperGames.length === 0){
+      sniperGameRunning = false;
+      return;
+    }
+    for(let g = 0; g < curSniperGames.length; g++){
+      sniperGame.slurks++;
+      if(sniperGame.slurks > 9){
+        msg.reply(`Du er godt langsom ${sniperGame.sniped}, tag 10 tåre!`);
+        curSniperGames.splice(g, 1);
+        g -= 1;
+      }else{
+        msg.reply(tællings[sniperGame.slurks]);
+      }
+    }
+    setTimeout(runSniperGame(), 1420);
   }
   if (msg.content === '!finger') {
     var index = curFingers.indexOf(msg.member.user.tag);
     if (index > -1) {
       msg.reply("Du har nu lagt en finger på bordet, i andre skal lægge en finger på bordet med !jegfinger");
       curFingers.splice(index,1);
-      fingerGame = users;
+      fingerGame = [...users];
       fingerGame.splice(fingerGame.indexOf(msg.member.user.tag),1);
       fingerGameRunning = true;
     } else {
-      msg.reply("Du har ikke et fingerkort, tag 2 tårer");
+      msg.reply("Du har ikke et fingerkort, tag 2 tåre");
     }
   }
   if (msg.content === '!konge') {
@@ -340,7 +386,7 @@ client.on('message', msg => {
 
 
     } else {
-      msg.reply("Du er ikke konge, skam dig og tag 2 tårer");
+      msg.reply("Du er ikke konge, skam dig og tag 2 tåre");
     }
   }
 
@@ -351,7 +397,7 @@ client.on('message', msg => {
         msg.reply("Du har nu en finger på bordet");
         fingerGame.splice(index,1);
         if (fingerGame.length < 2) {
-          msg.reply(fingerGame + " har tabt, tag 5 slurke");
+          msg.reply(fingerGame[0] + " har tabt, tag 5 slurke");
         }
       }
     } else {
